@@ -1,1 +1,86 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>KJV Holy Bible</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body { font-family: Georgia, serif; margin: 16px; }
+h1 { text-align: center; }
+select { width: 100%; padding: 8px; margin: 8px 0; }
+.verse { margin-bottom: 6px; }
+.verse-number { font-size: 0.8em; vertical-align: super; margin-right: 4px; }
+#errorMsg { color: red; text-align: center; margin-top: 16px; }
+</style>
+</head>
+<body>
+
+<h1>KJV Holy Bible</h1>
+
+<select id="bookSelect"></select>
+<select id="chapterSelect"></select>
+<div id="errorMsg"></div>
+<div id="bibleText"></div>
+
+<script>
+const bookSelect = document.getElementById("bookSelect");
+const chapterSelect = document.getElementById("chapterSelect");
+const bibleText = document.getElementById("bibleText");
+const errorMsg = document.getElementById("errorMsg");
+
+// Load Books.json
+fetch("Books.json")
+  .then(res => res.json())
+  .then(books => {
+    bookSelect.innerHTML = "";
+    books.forEach(book => {
+      const opt = document.createElement("option");
+      opt.value = book;
+      opt.textContent = book;
+      bookSelect.appendChild(opt);
+    });
+    bookSelect.onchange = loadChapters;
+    loadChapters();
+  })
+  .catch(err => errorMsg.textContent = "Error loading Books.json: " + err.message);
+
+// Load chapters for selected book
+function loadChapters() {
+  const book = bookSelect.value;
+  fetch(book + ".json")
+    .then(res => res.json())
+    .then(bookData => {
+      if(typeof bookData !== "object") throw new Error(book + ".json is invalid");
+      chapterSelect.innerHTML = "";
+      Object.keys(bookData).forEach(ch => {
+        const opt = document.createElement("option");
+        opt.value = ch;
+        opt.textContent = "Chapter " + ch;
+        chapterSelect.appendChild(opt);
+      });
+      chapterSelect.onchange = () => showChapter(bookData);
+      showChapter(bookData);
+    })
+    .catch(err => errorMsg.textContent = "Error loading book: " + err.message);
+}
+
+// Show verses
+function showChapter(bookData) {
+  const chapter = chapterSelect.value;
+  bibleText.innerHTML = "";
+  if(!bookData[chapter]) {
+    bibleText.textContent = "No verses found.";
+    return;
+  }
+  Object.keys(bookData[chapter]).forEach(v => {
+    const div = document.createElement("div");
+    div.className = "verse";
+    div.innerHTML = `<span class="verse-number">${v}</span>${bookData[chapter][v]}`;
+    bibleText.appendChild(div);
+  });
+}
+</script>
+
+</body>
+</html>
